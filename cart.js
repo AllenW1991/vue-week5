@@ -9,6 +9,7 @@ const app = createApp({
       cartData: {},
       products: [],
       productId: '',
+      isLoadingItem: '',
     };
   },
   methods: {
@@ -26,7 +27,7 @@ const app = createApp({
       this.productId = id;
       this.$refs.productModal.openModal();
     },
-    getCarts() {
+    getCart() {
       axios
         .get(`${apiUrl}/api/${apiPath}/cart`)
         .then((res) => {
@@ -37,10 +38,59 @@ const app = createApp({
           console.log(err);
         });
     },
+    addCart(id, qty = 1) {
+      console.log(id);
+      const data = {
+        product_id: id,
+        qty,
+      };
+      this.isLoadingItem = id;
+      axios
+        .post(`${apiUrl}/api/${apiPath}/cart`, { data })
+        .then((res) => {
+          console.log(res);
+          this.getCart();
+          this.$refs.productModal.closeModal();
+          this.isLoadingItem = '';
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    },
+    removeCartItem(id) {
+      this.isLoadingItem = id;
+      axios
+        .delete(`${apiUrl}/api/${apiPath}/cart/${id}`)
+        .then((res) => {
+          console.log(res);
+          this.isLoadingItem = '';
+          this.getCart();
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    },
+    updateCartItem(item) {
+      const data = {
+        product_id: item.id,
+        qty: item.qty,
+      };
+      this.isLoadingItem = item.id;
+      axios
+        .put(`${apiUrl}/api/${apiPath}/cart/${item.id}`, { data })
+        .then((res) => {
+          console.log(res);
+          this.getCart();
+          this.isLoadingItem = '';
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    },
   },
   mounted() {
     this.getProducts();
-    this.getCarts();
+    this.getCart();
   },
 });
 
@@ -51,6 +101,7 @@ app.component('product-modal', {
     return {
       modal: {},
       product: {},
+      qty: 1,
     };
   },
   watch: {
@@ -62,6 +113,9 @@ app.component('product-modal', {
     openModal() {
       this.modal.show();
     },
+    closeModal() {
+      this.modal.hide();
+    },
     getProduct() {
       axios
         .get(`${apiUrl}/api/${apiPath}/product/${this.id}`)
@@ -71,6 +125,9 @@ app.component('product-modal', {
         .catch((err) => {
           console.log(err);
         });
+    },
+    addCart() {
+      this.$emit('add-cart', this.product.id, this.qty);
     },
   },
   mounted() {
